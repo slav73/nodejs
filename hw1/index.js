@@ -1,65 +1,50 @@
-const fs = require("fs");
-const path = require("path");
-const base = process.cwd();
+const fs = require('fs');
+const path = require('path');
 
-const newBase = path.join(base, "newDir");
+const img = path.join(__dirname, 'images');
+const newBase = path.join(__dirname, 'newDir');
 
-if (!fs.existsSync(newBase)) {
-  fs.mkdirSync(newBase);
-}
+const start = dir => {
+	createDirIfNotExist(newBase);
+	getFileList(dir);
+};
 
-function filescanner(dir, done) {
-  let results = [];
+const createDirIfNotExist = dir => {
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir);
+	}
+};
 
-  fs.readdir(dir, function(err, list) {
-    if (err) return done(err);
+const getFileList = dir => {
+	const list = fs.readdirSync(dir);
+	list.forEach(elem => {
+		repeatIfSubFolders(elem, dir, linkFile, getFileList);
+	});
+};
 
-    let pending = list.length;
+const repeatIfSubFolders = (file, dir, linkFileFn, repeatGettingFromFolderFn) => {
+	const folderToCheck = path.join(dir, file);
+	const stat = fs.lstatSync(folderToCheck);
+	if (stat.isFile()) {
+		const elem = { route: folderToCheck, name: file };
+		linkFileFn(elem);
+	} else if (stat.isDirectory()) {
+		repeatGettingFromFolderFn(folderToCheck);
+	}
+};
 
-    if (!pending) return done(null, results);
+const linkFile = file => {
+	const dirName = file.name[0].toUpperCase();
+	const newDir = path.join(newBase, dirName);
+	createDirIfNotExist(newDir);
+	const newFile = path.join(newDir, file.name);
+	fs.copyFileSync(file.route, newFile);
+};
 
-    list.forEach(function(file) {
-      file = path.resolve(dir, file);
+// const errorHandler = err => {
+// 	if (err) {
+// 		console.log(err.message);
+// 	}
+// };
 
-      fs.stat(file, function(err, stat) {
-        if (stat && stat.isDirectory()) {
-          filescanner(file, function(err, res) {
-            results = results.concat(res);
-            pending--;
-            if (!pending) done(null, results);
-          });
-        } else {
-          results.push(path.basename(file));
-          let dirName = path
-            .basename(file)
-            .toString()[0]
-            .toUpperCase();
-
-          let newDir = path.join(newBase, dirName);
-          if (!fs.existsSync(newDir)) {
-            fs.mkdirSync(newDir);
-          }
-
-          let newFile = path.join(newDir, path.basename(file));
-          if (!fs.existsSync(newFile)) {
-            fs.link(file, newFile, err => {
-              if (err) {
-                console.error(err.message);
-                return;
-              }
-            });
-          }
-
-          pending--;
-          if (!pending) done(null, results);
-        }
-      });
-    });
-  });
-}
-
-filescanner(base, function(err, data) {
-  if (err) {
-    throw err;
-  }
-});
+start(img);
