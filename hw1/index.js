@@ -1,3 +1,5 @@
+//Первое ДЗ - работа с файловой системой
+
 const fs = require("fs");
 const path = require("path");
 const base = process.cwd();
