@@ -48,3 +48,4 @@ const linkFile = file => {
 // };
 
 start(img);
+
