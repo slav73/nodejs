@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/slav73/nodejs#readme",
   "dependencies": {
+    "minimist": "^1.2.0",
     "node": "^11.1.0"
   }
 }
