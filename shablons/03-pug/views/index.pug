@@ -1,0 +1,27 @@
+html
+  title PUG compilation demo
+  style.
+    h1 {
+        color: #9b9bb4;
+    }
+
+body
+  h1 PUG Template Engine
+
+  each user, index in f.users
+    li
+      i= index 
+      strong(class=`${user.name}`)  Name: #{user.name}
+      |
+      | is a #{user.age} year old #{user.species}
+    
+  - 
+    var pets = [
+            { name: "Hazel" },
+            { name: "Crys"},
+            { name: "Catcher"},
+            { log: "xxx"}
+        ]
+  hr
+  each pet in pets 
+    include block

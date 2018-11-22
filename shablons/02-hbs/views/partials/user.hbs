@@ -1,0 +1,6 @@
+{{!-- only output author name if an author exists --}}
+{{#if first_name}}
+<li>{{first_name}} {{last_name}}</li>
+{{else}}
+<li> empty string </li>
+{{/if}}

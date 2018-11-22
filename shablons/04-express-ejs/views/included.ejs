@@ -1,0 +1,6 @@
+<%# using query %>
+<% if (pet.name) { %>
+  <li class="<%= pet.name.length > 4 ? 'long' : 'short' %>" > <%= pet.name %></li>
+<% } else {%>
+  <li>empty</li>
+<% } %>
