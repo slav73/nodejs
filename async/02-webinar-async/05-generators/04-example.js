@@ -1,0 +1,21 @@
+const fs = require('fs');
+const path = require('path');
+
+function asyncFlow(generatorFunc) {
+  function cb(err) {
+    if (err) {
+      return generator.throw(err);
+    }
+    const results = [].slice.call(arguments, 1);
+    let temp = generator.next(results.length > 1 ? results : results[0]);
+  }
+  const generator = generatorFunc(cb);
+
+  let temp = generator.next();
+}
+
+asyncFlow(function*(cb) {
+  const filePath = path.join(__dirname, './src/test.txt');
+  const file = yield fs.readFile(filePath, 'utf8', cb);
+  yield fs.writeFile(path.join(__dirname, './dist/new.txt'), file, cb);
+});
