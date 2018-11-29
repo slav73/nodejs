@@ -1,3 +1,9 @@
-node_modules
-hw1/
-async/
+hw1
+/async
+/node_modules
+/shablons
+/newDir
+express/
+hw2/node_modules/
+koa/
+
