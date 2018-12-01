@@ -47,6 +47,7 @@ const getFileList = dir => {
   list.forEach(elem => {
     repeatIfSubFolders(elem, dir);
   });
+  return "Scanned directory: " + dir;
 };
 
 const repeatIfSubFolders = (file, dir) => {
@@ -54,12 +55,16 @@ const repeatIfSubFolders = (file, dir) => {
   const stat = fs.lstatSync(folderToCheck);
   if (stat.isFile()) {
     const elem = { route: folderToCheck, name: file };
-    return new Promise((resolve, reject) => {
+    new Promise((resolve, reject) => {
       resolve(linkFile(elem));
+    }).then(res => {
+      console.log(res);
     });
   } else if (stat.isDirectory()) {
     return new Promise((resolve, reject) => {
       resolve(getFileList(folderToCheck));
+    }).then(res => {
+      console.log(res);
     });
   }
 };
@@ -70,6 +75,7 @@ const linkFile = file => {
   createDirIfNotExist(newDir);
   const newFile = path.join(newDir, file.name);
   fs.copyFileSync(file.route, newFile);
+  return "Copied file: " + file.name;
 };
 
 init();
