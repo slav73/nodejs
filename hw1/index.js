@@ -1,67 +1,76 @@
-//Первое ДЗ - работа с файловой системой
-
 const fs = require("fs");
 const path = require("path");
-const base = process.cwd();
+const readline = require("readline");
 
-const newBase = path.join(base, "newDir");
-
-if (!fs.existsSync(newBase)) {
-  fs.mkdirSync(newBase);
-}
-
-function filescanner(dir, done) {
-  let results = [];
-
-  fs.readdir(dir, function(err, list) {
-    if (err) return done(err);
-
-    let pending = list.length;
-
-    if (!pending) return done(null, results);
-
-    list.forEach(function(file) {
-      file = path.resolve(dir, file);
-
-      fs.stat(file, function(err, stat) {
-        if (stat && stat.isDirectory()) {
-          filescanner(file, function(err, res) {
-            results = results.concat(res);
-            pending--;
-            if (!pending) done(null, results);
-          });
-        } else {
-          results.push(path.basename(file));
-          let dirName = path
-            .basename(file)
-            .toString()[0]
-            .toUpperCase();
-
-          let newDir = path.join(newBase, dirName);
-          if (!fs.existsSync(newDir)) {
-            fs.mkdirSync(newDir);
-          }
-
-          let newFile = path.join(newDir, path.basename(file));
-          if (!fs.existsSync(newFile)) {
-            fs.link(file, newFile, err => {
-              if (err) {
-                console.error(err.message);
-                return;
-              }
-            });
-          }
-
-          pending--;
-          if (!pending) done(null, results);
-        }
-      });
-    });
-  });
-}
-
-filescanner(base, function(err, data) {
-  if (err) {
-    throw err;
-  }
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
+
+const newBase = path.join(__dirname, "newDir");
+
+const init = () => {
+  rl.question("Какой каталог вы хотите прошерстить?", answer => {
+    console.log("Что ж, попробуем перебрать каталог " + answer);
+
+    let img = path.join(__dirname, answer);
+
+    if (!fs.existsSync(img)) {
+      img = path.join(__dirname, "images");
+      console.log(
+        "Пытаешься завалить программу? Бесполезно - такого каталога нет. А пока ты думаешь, прошерстим-ка мы папочку " +
+          img
+      );
+    }
+
+    start(img);
+    console.log(
+      "Поздравляем! Теперь ваш бардак красиво разложен в каталоге " + newBase
+    );
+    rl.close();
+  });
+};
+
+const start = dir => {
+  createDirIfNotExist(newBase);
+  getFileList(dir);
+};
+
+const createDirIfNotExist = dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+};
+
+const getFileList = dir => {
+  const list = fs.readdirSync(dir);
+  list.forEach(elem => {
+    repeatIfSubFolders(elem, dir, linkFile, getFileList);
+  });
+};
+
+const repeatIfSubFolders = (
+  file,
+  dir,
+  linkFileFn,
+  repeatGettingFromFolderFn
+) => {
+  const folderToCheck = path.join(dir, file);
+  const stat = fs.lstatSync(folderToCheck);
+  if (stat.isFile()) {
+    const elem = { route: folderToCheck, name: file };
+    linkFileFn(elem);
+  } else if (stat.isDirectory()) {
+    repeatGettingFromFolderFn(folderToCheck);
+  }
+};
+
+const linkFile = file => {
+  const dirName = file.name[0].toUpperCase();
+  const newDir = path.join(newBase, dirName);
+  createDirIfNotExist(newDir);
+  const newFile = path.join(newDir, file.name);
+  fs.copyFileSync(file.route, newFile);
+};
+
+init();
