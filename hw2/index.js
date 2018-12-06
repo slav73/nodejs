@@ -1,6 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
+const { promisify } = require("util");
+
+const checkFolder = promisify(fs.stat);
+const copyFile = promisify(fs.copyFile);
+const checkFileAsync = promisify(fs.access);
+const createDirAsync = promisify(fs.mkdir);
+const fileList = promisify(fs.readdir);
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -9,27 +16,22 @@ const rl = readline.createInterface({
 
 const newBase = path.join(__dirname, "newDir");
 
-const init = () => {
+function init() {
   rl.question("Какой каталог вы хотите прошерстить?", answer => {
     console.log("Что ж, попробуем перебрать каталог " + answer);
+    checkFileAsync(answer)
+      .then(res => {
+        img = path.join(__dirname, answer);
+        start(img);
+        console.log("Новый каталог создан и упорядочен");
+      })
+      .catch(err => {
+        console.log("такого каталога нет!");
+      });
 
-    let img = path.join(__dirname, answer);
-
-    if (!fs.existsSync(img)) {
-      img = path.join(__dirname, "images");
-      console.log(
-        "Пытаешься завалить программу? Бесполезно - такого каталога нет. А пока ты думаешь, прошерстим-ка мы папочку " +
-          img
-      );
-    }
-
-    start(img);
-    console.log(
-      "Поздравляем! Теперь ваш бардак красиво разложен в каталоге " + newBase
-    );
     rl.close();
   });
-};
+}
 
 const start = dir => {
   createDirIfNotExist(newBase);
@@ -37,45 +39,36 @@ const start = dir => {
 };
 
 const createDirIfNotExist = dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-  }
+  createDirAsync(dir).catch(err => console.log(err));
 };
 
 const getFileList = dir => {
-  const list = fs.readdirSync(dir);
-  list.forEach(elem => {
-    repeatIfSubFolders(elem, dir);
+  const list = fileList(dir);
+
+  list.then(res => {
+    res.forEach(elem => {
+      repeatIfSubFolders(elem, dir);
+    });
   });
-  return "Scanned directory: " + dir;
 };
 
 const repeatIfSubFolders = (file, dir) => {
   const folderToCheck = path.join(dir, file);
-  const stat = fs.lstatSync(folderToCheck);
-  if (stat.isFile()) {
-    const elem = { route: folderToCheck, name: file };
-    new Promise((resolve, reject) => {
-      resolve(linkFile(elem));
-    }).then(res => {
-      console.log(res);
-    });
-  } else if (stat.isDirectory()) {
-    return new Promise((resolve, reject) => {
-      resolve(getFileList(folderToCheck));
-    }).then(res => {
-      console.log(res);
-    });
-  }
+  checkFolder(folderToCheck)
+    .then(res => {
+      res.isDirectory() ? getFileList(folderToCheck) : linkFile(file, dir);
+    })
+    .catch(err => console.log(err));
 };
 
-const linkFile = file => {
-  const dirName = file.name[0].toUpperCase();
+const linkFile = (file, dir) => {
+  const dirName = file[0].toUpperCase();
   const newDir = path.join(newBase, dirName);
+  const newFile = path.join(newDir, file);
+  const oldFile = path.join(dir, file);
+
   createDirIfNotExist(newDir);
-  const newFile = path.join(newDir, file.name);
-  fs.copyFileSync(file.route, newFile);
-  return "Copied file: " + file.name;
+  copyFile(oldFile, newFile);
 };
 
 init();
